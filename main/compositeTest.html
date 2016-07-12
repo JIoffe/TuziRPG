@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>CANVAS COMPOSITE TEST</title>
+		<style>
+		#c{
+			width: 1280px;
+			height: 960px;
+		}
+		img{
+			display: none;
+		}
+		</style>
+	</head>
+
+	  <body>
+	  	<img src="./imgs/evileye.png" id="ee"/>
+	  	<canvas id="c" width="640" height="480"></canvas>
+
+	  </body>
+	  <script>
+	  	(function(d){
+			var canvas = d.getElementById('c'),
+				img = d.getElementById('ee'),
+				rc = canvas.getContext('2d');
+
+			var frameBuffer = d.createElement('canvas');
+			frameBuffer.setAttribute('width', '640');
+			frameBuffer.setAttribute('height', '480');
+
+			var frameBufferRC = frameBuffer.getContext('2d');
+
+
+
+			var naturalHeight = 48,
+				naturalWidth = 48;
+			var erasureBars = new Array(Math.floor(naturalHeight/2));
+			var nBars = 0;
+
+			var i;
+			for(i = 0; i < erasureBars.length; i++){
+				erasureBars[i] = i;
+			}
+			for(i = 0; i < erasureBars.length; ++i){
+				var j = Math.floor(Math.random() * i);
+				var temp = erasureBars[i];
+				erasureBars[i] = erasureBars[j];
+				erasureBars[j] = temp;
+			}
+
+
+			var ms = 0;
+			var alpha = 1.0;
+			(function render(){
+				var dT = 30 / 1000;
+
+				rc.clearRect(0,0,640,480);
+				frameBufferRC.save();
+				frameBufferRC.clearRect(0,0,640,480);
+
+				frameBufferRC.drawImage(img, 0, 0);
+
+				frameBufferRC.fillStyle = '#F00';
+				frameBufferRC.globalCompositeOperation = 'source-in';
+				frameBufferRC.fillRect(0,0,640,480);
+
+				frameBufferRC.globalAlpha = 0.5;
+				frameBufferRC.globalCompositeOperation = 'source-atop';
+				frameBufferRC.drawImage(img, 0, 0);
+
+				frameBufferRC.globalAlpha = 1;
+				frameBufferRC.globalCompositeOperation = 'destination-out';
+				frameBufferRC.fillStyle = '#000';
+				for(i = 0; i < Math.floor((1.0-alpha)*erasureBars.length); ++i){
+					frameBufferRC.fillRect(0,erasureBars[i]*2,640,2);	
+				}
+
+				frameBufferRC.restore();
+
+				alpha = Math.max(0, alpha - 1 * dT);
+				rc.save();
+				rc.globalAlpha = alpha;
+				rc.translate((1.0 - alpha) * naturalWidth, 0);
+				rc.rotate(1.0 - alpha);
+				rc.globalCompositeOperation = 'overlay';
+				rc.drawImage(frameBuffer, 0, 0);
+				rc.globalAlpha = 1;
+				rc.globalCompositeOperation = 'source-over';
+				rc.restore();
+
+				ms += 30;
+
+				setTimeout(render, 30);
+			})();
+
+		})(document);
+	  </script>
+</html>

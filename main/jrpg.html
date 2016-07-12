@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>JRPG</title>
+		<meta charset="UTF-8"/>
+		<link rel="stylesheet" href="./jrpg-main.css"/>	
+	</head>
+	<body>
+		<canvas id="c" width="640" height="480">Your browser does not support the canvas drawing surface. Please upgrade!</canvas>
+	</body>
+	<script src="./js/foofmath.js" type="text/javascript"></script>
+	<script src="./js/datastructs.js" type="text/javascript"></script>
+	<script src="./js/events.js" type="text/javascript"></script>
+	<script src="./js/alertmsg.js" type="text/javascript"></script>
+
+	<script src="./js/queue.js" type="text/javascript"></script>
+	<script src="./js/renderingengine.js" type="text/javascript"></script>
+	<script src="./js/particles.js" type="text/javascript"></script>
+	<script src="./js/animatedsprite.js" type="text/javascript"></script>
+
+	<script src="./js/menus.js" type="text/javascript"></script>
+	<script src="./js/globalstate.js" type="text/javascript"></script>
+	<script src="./js/combatant.js" type="text/javascript"></script>
+	<script src="./js/enemies.js" type="text/javascript"></script>
+	<script src="./js/players.js" type="text/javascript"></script>
+	<script src="./js/npc.js" type="text/javascript"></script>
+	<script src="./js/areamap.js" type="text/javascript"></script>
+	<script src="./js/battleactions.js" type="text/javascript"></script>
+	<script src="./js/battle.js" type="text/javascript"></script>
+	<script>
+		/*
+			Request Animation Frame lets us get timely regular updates when the page is in focus
+		*/
+		window.requestAnimationFrame = (function(){
+		  return  window.requestAnimationFrame       ||
+		          window.webkitRequestAnimationFrame ||
+		          window.mozRequestAnimationFrame    ||
+		          function( callback ){
+		            window.setTimeout(callback, 32);
+		          };
+		})();		
+	</script>	
+	<script>
+		(function(d){
+			var renderingEngine = new RenderingEngine(d.getElementById('c'));
+
+			renderingEngine.initialize(['font.png', 
+										'cursor.png',
+										'cursordown.png',
+										'tuzi.png',
+										'tuzi_battle.png',
+										'battle1.png',
+										'evileye.png',
+										'bg.png',
+										'spirit.png',
+										'map1.png',
+										'piggy1.png',
+										'piggy2.png',
+										'piggy3.png',
+										'piggy4.png',
+										'piggy5.png',
+										'lightning.png',
+										'lightning2.png',
+										'lightning3.png',
+										'fireball.png',
+										'flamesplash.png',
+										'sewermonster.png',
+										'psymissile.png',
+										'dropshadow.png',
+										'burning.png']);
+
+
+			GlobalState.addPartyMember(PlayableCharacters.TUZI);
+			// {"name" : 'Pan Pan', "maxhp" : 1200, "hp" : 1200, "maxmp" : 300, "mp" : 300, "speed" : 75, "readiness" : 0.0},
+			// {"name" : 'Xiao Mao', "maxhp" : 2450, "hp" : 2450, "maxmp" : 300, "mp" : 300, "speed" : 100, "readiness" : 0.0}
+
+			//GlobalState.pushState(Battle, BattleList[0]);
+			//Start on the main map and push the intro dialogue to it
+			GlobalState.pushState(AreaMap, 0);
+
+			/*
+				Hook Input events - all state dependent
+			*/
+			var stateMachine = GlobalState.getStateMachine();
+			function getKeycode(ev){
+				/*
+					keycode : 
+					0 UP
+					1 RIGHT
+					2 DOWN
+					3 LEFT
+
+					4 CONFIRM
+					5 CANCEL
+				*/				
+				var code = ev.keyCode || ev.which;
+				if(code == 32)
+					return 4;
+				if(code == 81)
+					return 5;
+				if(code == 38 || code == 87)
+					return 0;
+				if(code == 39 || code == 68)
+					return 1;
+				if(code == 40 || code == 83)
+					return 2;
+				if(code == 37 || code == 65)
+					return 3;				
+			}
+			function onKeydown(ev){
+				if(!stateMachine.length || !stateMachine[stateMachine.length - 1].onKeydown)
+					return;
+
+				var keycode = getKeycode(ev);
+				stateMachine[stateMachine.length - 1].onKeydown.call(GlobalState, keycode, ev);
+			}
+			function onKeyup(ev){
+				if(!stateMachine.length || !stateMachine[stateMachine.length - 1].onKeyup)
+					return;
+
+				var keycode = getKeycode(ev);
+				stateMachine[stateMachine.length - 1].onKeyup.call(GlobalState, keycode, ev);
+			}
+			function onAlertMsg(ev){
+				//Alert boxes go at the top of the screen regardless of state
+				AlertMessageQueue.add(ev.detail.message, ev.detail.duration);
+			}
+			function onGameplayEvent(ev){
+				//Events that vary based on gameplay state
+				if(ev.detail.type === 'gamestatecomplete'){
+					stateMachine.pop();
+				}else if(ev.detail.type === 'gamestatepush'){
+					GlobalState.pushState(ev.detail.stateMachine, ev.detail.args);
+				}else{
+					if(!stateMachine.length || !stateMachine[stateMachine.length - 1].onGameplayEvent)
+						return;				
+					stateMachine[stateMachine.length - 1].onGameplayEvent.call(GlobalState, ev);
+				}
+			}
+
+			d.addEventListener('keydown', onKeydown);
+			d.addEventListener('keyup', onKeyup);
+			d.addEventListener('alertmsg', onAlertMsg);
+			d.addEventListener('gameplayevent', onGameplayEvent);
+
+			/*
+				MAIN LOOP AND TIMESTAMP				
+			*/
+			var previousTime = Date.now();
+			(function mainLoop(){
+				if(GlobalState.isRunning())
+					window.requestAnimationFrame(mainLoop);
+				else{
+					d.removeEventListener('keydown', onKeydown);
+					d.removeEventListener('keyup', onKeyup);
+					d.removeEventListener('alertmsg', onAlertMsg);
+					d.removeEventListener('gameplayevent', onGameplayEvent);
+					return;
+				}
+
+				var currentTime = Date.now(),
+					deltaMS = currentTime - previousTime,
+					deltaSeconds = deltaMS * 0.001;
+				previousTime = currentTime;				
+
+				renderingEngine.onTick(deltaSeconds);
+
+				var currentState = GlobalState.getCurrentState();
+				currentState.onUpdate.call(GlobalState, deltaSeconds);
+				currentState.onRender.call(GlobalState, renderingEngine, deltaSeconds);
+
+				//Render alert message queue / etc. global effects
+				AlertMessageQueue.onRender(renderingEngine, deltaSeconds);
+
+				//Push rendered content into the visible canvas
+				renderingEngine.swapBuffers();
+			})();
+
+			//Game begins!
+			EventDispatcher.dispatchDialogueStart(new Dialogue(new Exchange('There are whispers of an insane watchmaker in this city who has captured a young peasant. An adventure is at foot! Search the town for information, supplies, and allies.')));
+		})(document);
+	</script>
+</html>

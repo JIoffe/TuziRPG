@@ -1,0 +1,410 @@
+function MapSpriteWrapper(element, x, y, bottom){
+	this.element = element;
+	this.x = x;
+	this.y = y;
+	this.bottom = bottom;
+}
+MapSpriteWrapper.compareHeight = function(a, b){
+	if(a.bottom == b.bottom)
+		return 0;
+	if(a.bottom < b.bottom)
+		return 1;
+	if(a.bottom > b.bottom)
+		return -1;
+}
+
+/*
+	Hard coded for now based on output from a level editor, just for testing.
+	In practice, this should be a request for JSON from the server.
+*/
+var Maps = [
+	{	//CITY
+		"battles" : [0, 1],
+		"width": 64,
+		"flippedCoords" : true,
+		"height" : 30,
+		"npcs" : [
+			new NonPlayerCharacter('piggy1.png', new Dialogue('I am a piggy. Oink oink!'), 240, 220),
+			new NonPlayerCharacter('piggy2.png', new Dialogue('These streets are dangerous for a bunny!'), 660, 320),
+			new NonPlayerCharacter('piggy3.png', new Dialogue('Know why Java programmers wear glasses? Because they can\'t C#!'), 300, 620)
+		],
+		"tiles" : [16777228,16777228,16777228,16777227,16777229,16777227,16777242,16777241,16777241,16777241,16777241,16777240,16777232,16777231,16777231,16777231,16777231,16777230,16777279,16777283,16777277,16777279,16777283,16777277,16777229,16777228,16777228,16777229,10,16777225,16777224,16777228,16777228,16777228,16777227,16777289,16777288,16777288,16777288,16777287,16777254,16777253,16777253,16777252,16777264,16777264,16777264,16777252,16777238,16777238,16777238,16777238,16777238,16777238,16777237,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777225,16777225,16777225,16777224,16777229,16777227,16777239,16777238,16777238,16777238,16777238,16777237,16777229,16777228,16777228,16777228,16777228,16777227,16777279,16777283,16777265,16777267,16777283,16777277,16777229,16777228,16777228,16777229,76,16777291,16777290,16777228,16777228,16777228,16777227,16777289,16777288,16777288,16777288,16777287,16777254,16777266,16777253,16777252,16777264,16777266,16777264,16777252,16777238,16777238,16777238,16777238,16777238,16777238,16777237,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777256,16777256,16777256,16777255,16777229,16777227,16777239,16777238,16777750,16777238,16777238,16777237,16777229,16777228,16777228,16777228,16777228,16777227,16777276,16777275,16777274,16777276,16777275,16777274,16777229,16777228,16777228,16777229,16777286,16777285,16777284,16777228,16777228,16777228,16777227,16777301,16777288,16777300,16777288,16777299,16777232,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777230,16777237,16777226,16777225,16777225,16777225,16777225,16777225,16777225,16777225,16777225,16777232,16777231,16777231,16777230,16777229,16777227,16777239,16777248,16777247,16777246,16777266,16777265,16777226,16777225,16777225,16777225,16777225,16777224,106,104,126,125,126,119,16777226,16777225,16777225,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777289,16777288,16777288,16777288,16777287,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777237,16777282,16777281,16777281,16777281,16777281,16777281,16777281,16777281,16777281,16777229,16777228,16777228,16777227,16777229,16777227,16777236,16777245,28,16777243,16777235,16777234,16777282,16777281,16777281,16777281,16777281,16777280,108,113,0,0,0,121,16777292,16777291,16777291,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777286,16777285,16777285,16777285,16777284,16777229,16777228,16777228,16777228,16777230,16777225,16777225,16777225,16777225,16777232,16777228,16777228,16777228,16777227,16777232,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777231,16777230,16777229,16777228,16777228,16777227,16777226,16777224,106,126,126,126,126,119,16777279,16777278,16778046,16777278,16777278,16777277,108,113,0,117,0,123,16777289,16777288,16777288,16777226,16777225,16777225,16777225,16777225,16777225,16777225,16777224,106,104,126,126,119,16777229,16777228,16777228,16777228,16777227,16777282,16777281,16777281,16777280,16777229,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777227,16777239,16777237,108,117,0,0,0,121,16777267,16777273,16777272,16777271,16777266,16777265,108,114,0,0,0,121,16777289,16777300,16777288,16777292,16777291,16777291,16777291,16777291,16777291,16777291,16777290,108,113,117,0,121,16777226,16777225,16777225,16777225,16777224,16777279,16777278,16777278,16777277,16777226,16777225,16777225,16777225,16777224,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777227,16777267,16777265,108,0,0,0,0,123,16777276,16777270,53,16777268,16777275,16777274,109,0,0,0,0,123,16777286,16777285,16777285,16777289,16777288,16777288,16777288,16777544,16777288,16777288,16777287,108,113,0,0,121,16777282,16777281,16777281,16777281,16777280,16777267,16777283,16777278,16777265,16777282,16777281,16777281,16777281,16777280,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777227,16777236,16777234,109,0,0,0,0,127,126,125,126,126,125,126,124,0,0,0,0,121,116,116,116,16777301,16777288,16777300,16777298,16777297,16777296,16777300,16777287,108,114,0,0,121,16777279,50,16777278,16777266,16777277,16777276,16779067,16777275,16777274,16777279,16777266,16777278,16777266,16777277,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777227,106,104,124,0,0,0,0,115,113,113,113,113,113,113,113,113,0,117,0,123,116,116,116,16777286,16777285,16777285,16777295,78,16777293,16777285,16777284,109,0,0,0,123,16777279,16777273,16777272,16777271,16777277,87,16778845,88,93,16777279,16777273,16777272,16777271,16777277,16777226,16777225,16777225,16777225,16777225,16777229,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777227,108,113,0,0,4096,3840,3840,3840,3584,4096,3840,3840,3840,3840,3584,113,0,0,0,121,116,116,116,116,116,116,116,116,116,116,116,122,0,0,0,121,16777276,16777270,53,16777268,16777274,90,90,90,90,16777276,16777270,53,16777268,16777274,16777242,16777241,16777241,16777241,16777240,16777229,16777228,16777228,16777228,16777227,16777226,16777225,16777225,16777224,108,113,0,0,16777229,16777228,16777228,16777228,16777227,16777226,16777225,16777225,16777225,16777225,16777224,113,0,0,0,127,126,125,126,126,126,125,126,126,126,125,126,124,0,0,0,127,126,126,126,125,126,0,0,0,0,126,125,126,126,119,16777267,16777233,16778257,16777233,16777265,16777229,16777228,16777228,16777228,16777227,16777257,16777256,16777256,16777255,108,113,117,121,16777229,16777228,16777228,16777228,16777227,16777257,16777256,16777257,16777256,16777256,16777255,113,117,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,117,0,0,0,0,0,0,121,16777239,16777248,16777247,16777246,16777237,16777229,16777228,16777228,16777228,16777227,16777254,16777253,16777253,16777252,108,114,0,121,16777226,16777225,16777225,16777225,16777224,16777254,16777264,16777267,16777253,16777266,16777265,113,0,0,0,0,0,97,96,1888,96,96,96,96,1888,96,96,96,96,95,117,0,0,0,0,0,0,0,0,0,0,0,0,0,0,121,16777236,16777245,28,16777243,16777234,16777229,16777228,16777228,16777228,16777227,16777231,16777231,16777231,16777231,3840,3584,0,121,16777257,16777256,16777256,16777256,16777255,16777251,16779042,16777251,16777250,16777250,16777249,114,0,0,0,0,0,94,87,16778845,1880,93,87,88,16778845,1885,87,93,93,92,0,0,4096,3840,3840,3840,3840,3840,3840,3840,3840,3840,3584,113,0,127,126,126,126,125,126,16777226,16777225,16777225,16777225,16777224,16777228,16777228,16777228,16777228,16777228,16777227,0,121,16777267,16777263,16777262,16777261,16777265,87,16778845,88,88,87,92,0,0,0,0,117,0,94,93,93,16778845,87,93,93,88,16778845,93,88,93,92,0,121,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,108,0,0,0,0,0,0,0,16777242,16777241,16777241,16777241,16777240,16777228,16777228,16777228,16777228,16777228,16777227,0,121,16777251,16777260,43,16777258,16777249,90,90,90,90,90,89,0,0,0,0,0,0,91,90,90,90,90,90,90,90,90,90,90,90,89,0,121,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,108,0,117,0,0,0,0,0,16777239,16777266,16777233,16777266,16777237,16777228,16777228,16777228,16777228,16777228,16777227,0,127,125,126,126,126,126,0,0,0,0,4096,3840,3840,3840,3840,3584,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,123,16777226,16777225,16777225,16777229,16777228,16777228,16777228,16777227,16777225,16777225,16777224,108,0,0,0,0,0,0,0,16777236,16777235,16777235,16777235,16777234,16777228,16777228,16777228,16777228,16777228,16777227,0,0,0,117,0,0,0,0,0,0,0,16777226,16777225,16777225,16777225,16777225,16777224,113,0,4096,3840,3840,3840,3840,3840,3840,3584,0,0,97,96,95,0,121,16777257,16777256,16777255,16777229,16777228,16777228,16777228,16777227,16777257,16777256,16777255,108,0,0,0,0,4096,3840,3840,16777231,16777231,16777231,16777231,16777230,16777225,16777225,16777225,16777225,16777225,16777224,3840,3584,0,0,0,0,0,117,0,0,121,16777242,16777241,16777241,16777241,16777241,16777240,108,0,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777227,113,0,94,88,92,0,121,16777254,16777266,16777252,16777229,16777228,16777228,16777228,16777227,16777254,16777266,16777252,108,0,0,0,0,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777291,16777291,16777291,16777291,16777291,16777290,16777228,16777227,0,0,0,0,0,0,0,0,121,16777239,16777266,16777248,16777247,16777246,16777265,108,121,16777226,16777225,16777225,16777225,16777225,16777225,16777225,16777224,108,0,94,87,92,0,123,16777251,16777250,16777249,16777229,16777228,16777228,16777228,16777227,16777251,16777250,16777249,109,0,0,117,0,16777229,16777228,16777232,16777231,16777231,16777230,16777228,16777227,16777302,84,16777302,16777300,16777302,16777287,16777228,16777227,4096,3840,3840,3840,3840,3840,3584,0,121,16777236,16777235,16777245,28,16777243,16777234,109,123,16777292,16777291,16777291,16777291,16777291,16777291,16777291,16777290,108,0,94,87,92,0,121,116,116,116,16777226,16777225,16777225,16777225,16777224,110,116,116,122,0,0,0,0,16777226,16777225,16777229,16777228,16777228,16777227,16777225,16777224,16777288,16777288,16777288,16777288,16777288,16777284,16777228,16777227,16777229,16777228,16777228,16777228,16777228,16777228,16777227,0,127,126,125,126,126,125,126,124,121,16777301,16777285,16777298,16777297,16777296,16777300,16777285,16777299,108,0,94,88,92,0,121,116,116,116,16777257,16777256,16777256,16777256,16777255,110,116,116,120,0,0,4096,3840,16777231,16777231,16777226,16777225,16777225,16777224,16777231,16777230,16777225,16777225,16777225,16777225,16777225,16777225,16777225,16777224,16777229,16777228,16777228,16777228,16777228,16777228,16777227,0,0,0,0,0,0,0,0,0,121,16777286,16777285,16777295,78,16777293,16777285,16777285,16777284,109,0,91,90,89,0,123,116,116,116,16777254,16777263,16777262,16777261,16777252,110,116,116,120,0,0,16777229,16777228,16777228,16777228,16777257,16777256,16777256,16777255,16777228,16777227,16777291,16777291,16777291,16777291,16777291,16777291,16777291,16777290,16777226,16777225,16777225,16777225,16777225,16777225,16777224,4096,3840,3840,3840,3584,0,0,0,0,127,126,125,126,126,126,125,126,126,124,0,0,0,117,0,121,116,116,116,16777251,16777260,53,16777258,16777249,111,116,116,122,0,0,16777229,16777228,16777228,16777228,16777251,16777250,16777250,16777249,16777228,16777227,16777302,16777300,16777302,16777302,16777300,16777302,16777302,16777299,16777282,16777281,16777281,16777281,16777281,16777281,16777280,16777229,16777228,16777228,16777228,16777227,0,0,0,0,0,0,0,0,0,0,97,96,95,0,0,0,0,0,0,127,126,125,126,125,126,126,125,126,126,125,126,124,0,0,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777302,16777302,16777302,16777302,16777302,16777302,16777302,16777287,16777279,16777266,16777278,16777278,16777266,16777278,16777265,16777229,16777228,16777228,16777228,16777227,4096,3840,3840,3840,3584,4096,3840,3840,3840,3584,94,87,92,4096,3840,3840,3840,3584,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777302,16777302,16777302,16777302,16777302,16777302,16777302,16777287,16777279,16777278,16777278,16777278,16777278,16777278,16777277,16777229,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777227,94,88,92,16777229,16777228,16777228,16777228,16777227,0,0,0,0,0,0,0,0,0,0,4096,3840,3840,3840,3840,3584,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777302,16777300,16777302,16777302,16777300,16777302,16777302,16777299,16777279,16777278,16777278,16777278,16777278,16777278,16777277,16777229,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777227,16777226,16777225,16777225,16777225,16777224,94,93,92,16777226,16777225,16777225,16777225,16777224,4096,3840,3840,3840,3840,3840,3840,3840,3840,3584,16777229,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777302,16777302,16777302,16777302,16777302,16777302,16777302,16777287,16777279,16777266,16777278,16777278,16777266,16777278,16777265,16777226,16777225,16777225,16777225,16777224,16777229,16777228,16777228,16777228,16777227,16777242,16777241,16777241,16777241,16777240,94,87,92,16777242,16777241,16777241,16777241,16777240,16777229,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777228,16777227,16777229,16777228,16777228,16777228,16777228,16777227,16777226,16777225,16777225,16777225,16777225,16777225,16777225,16777225,16777225,16777224],
+		"img" : 'map1.png'
+	}
+];
+Maps.isWall = function(x,y){
+	x = Math.floor(x / 32);
+	y = Math.floor(y / 32);
+
+	var i = x + y*this.width;
+
+	return ((this.tiles[i] & 0xFF000000) == 0x01000000);
+};
+Maps.intersectsWallHorizontally = function(boundingBox, deltaX){
+	if(!deltaX){
+		return 	Maps.isWall.call(this, boundingBox.left, boundingBox.top) ||
+				Maps.isWall.call(this, boundingBox.left, boundingBox.bottom) ||
+				Maps.isWall.call(this, boundingBox.right, boundingBox.top) ||
+				Maps.isWall.call(this, boundingBox.right, boundingBox.bottom);
+	}
+
+	if(deltaX > 0){
+		return Maps.isWall.call(this, boundingBox.right + deltaX, boundingBox.top) || Maps.isWall.call(this, boundingBox.right + deltaX, boundingBox.bottom);	
+	}
+	return Maps.isWall.call(this, boundingBox.left + deltaX, boundingBox.top) || Maps.isWall.call(this, boundingBox.left + deltaX, boundingBox.bottom);
+};
+Maps.intersectsWallVertically = function(boundingBox, deltaY){
+	if(!deltaY){
+		return 	Maps.isWall.call(this, boundingBox.left, boundingBox.top) ||
+				Maps.isWall.call(this, boundingBox.left, boundingBox.bottom) ||
+				Maps.isWall.call(this, boundingBox.right, boundingBox.top) ||
+				Maps.isWall.call(this, boundingBox.right, boundingBox.bottom);
+	}
+
+	if(deltaY > 0){
+		return Maps.isWall.call(this, boundingBox.left, boundingBox.top + deltaY) || Maps.isWall.call(this, boundingBox.right, boundingBox.top + deltaY);	
+	}
+	return Maps.isWall.call(this, boundingBox.left, boundingBox.bottom + deltaY) || Maps.isWall.call(this, boundingBox.right, boundingBox.bottom + deltaY);
+};
+Maps.intersectsWall = function(boundingBox, deltaX, deltaY){
+	return Maps.intersectsWallVertically.call(this, boundingBox, deltaY) || Maps.intersectsWallHorizontally.call(this, boundingBox, deltaX);
+};
+Maps.intersectsObjectsHorizontally = function(boundingBox, deltaX){
+	var i;
+	for(i = 0; i < this.npcs.length; ++i){
+		var npcBoundingBox = this.npcs[i].boundingBox;
+		if(	boundingBox.left + deltaX < npcBoundingBox.right &&
+			boundingBox.right + deltaX > npcBoundingBox.left &&
+			boundingBox.bottom < npcBoundingBox.top &&
+			boundingBox.top > npcBoundingBox.bottom)
+		return true;
+	}
+	return false;
+};
+Maps.intersectsObjectsVertically = function(boundingBox, deltaY){
+	var i;
+	for(i = 0; i < this.npcs.length; ++i){
+		var npcBoundingBox = this.npcs[i].boundingBox;
+		if(	boundingBox.left < npcBoundingBox.right &&
+			boundingBox.right > npcBoundingBox.left &&
+			boundingBox.bottom + deltaY < npcBoundingBox.top &&
+			boundingBox.top + deltaY > npcBoundingBox.bottom)
+		return true;
+	}
+	return false;
+};
+
+/*
+	Game state that handles walking around a tile-based map, which can include
+	walls and NPCs
+
+	Currently, moving to new areas are not supported.
+
+	The map owns the current input state of the player, its own internal ui stack,
+	the current map to render and interact wth, and a randomly incrementing trigger for battles
+*/
+var AreaMap = new (function(){
+	var playerX, playerY,
+		currentMap,
+		moveUp,
+		moveDown,
+		moveRight,
+		moveLeft,
+		battleTrigger,
+		speed = 125,
+		uiStack,
+		activeMember;
+
+	var BattleTransition = new (function(){
+		var state = 0.0,
+			battle = null,
+			frameBuffer = null;
+
+		this.start = function(b){
+			state = 0.0;
+			battle = b;
+			frameBuffer = null;
+		};
+		
+		this.onUpdate = function(dT){
+			state += dT * 0.75;
+			if(state >= 1.8){
+				EventDispatcher.dispatchStatePushEvent(Battle, battle);
+				return true;
+			}
+		};
+
+		this.onKeydown = function(keycode, ev){
+			//Time to fight, can't back out now!!!!
+		};
+		this.onRender = function(renderingEngine, dT){
+			renderingEngine.executeRoutine(function(){
+				if(frameBuffer === null){
+					this.frameBufferRC.drawImage(this.backBuffer, 0, 0);
+					frameBuffer = this.frameBuffer;
+				}
+				var rc = this.backBufferRC,
+					frameWidth = this.frameWidth,
+					frameHeight = this.frameHeight,
+					stepSize = frameWidth / 20;
+
+				this.fillRect(0, 0, frameWidth, frameHeight, '#000');
+				for(var i = 0; i < 20; ++i){
+					var offset = (i % 2 === 0) ? -state * frameHeight : state * frameHeight;
+					rc.drawImage(frameBuffer, i * stepSize, 0, stepSize, frameHeight, i * stepSize, offset, stepSize, frameHeight);
+				}
+			});
+		};
+		return this;
+	})();
+
+	this.onKeydown = function(keycode, ev){
+		if(uiStack.length !== 0){
+			uiStack[uiStack.length - 1].onKeydown(keycode, ev);
+			return;
+		}
+		if(battleTrigger >= 1.0){
+			moveUp = moveRight = moveLeft = moveDown;
+			return;
+		}
+
+		switch(keycode){
+			case 4:
+				//See if there is anything nearby in the direction we are seeking
+				var triggerDistance = 40,
+					nearestInteractiveObject = null,
+					i;
+
+				for(i = 0; i < currentMap.npcs.length; ++i){
+					var npc = currentMap.npcs[i],
+						currentDistance = distance(playerX, playerY, npc.x, npc.y);
+
+					if(currentDistance <= triggerDistance){
+						//Direction check is a little buggy. Commenting out until kinks are sorted out
+						// var direction = activeMember.getDirection(),
+						// 	dX = npc.x - playerX,
+						// 	dY = npc.y - playerY;
+
+
+
+						// dX /= currentDistance;
+						// dY /= currentDistance;
+
+						// if(FoofMath.dot(direction.x, direction.y, dX, dY) > 0.2)					
+							nearestInteractiveObject = npc;
+					}
+				}
+				if(!!nearestInteractiveObject){
+					nearestInteractiveObject.onEngage(playerX, playerY);
+					activeMember.sprite.setStillAnimation();
+				}
+				break;
+			case 0:
+				if(!moveUp){
+					moveUp = true;
+				}
+				break;
+			case 1:
+				if(!moveRight){		
+					moveRight = true;
+				}
+				break;
+			case 2:
+				if(!moveDown){
+					moveDown = true;
+				}
+				break;
+			case 3:
+				if(!moveLeft){
+					moveLeft = true;
+				}
+				break;
+			default:
+				break;
+		}		
+	};
+
+	this.onKeyup = function(keycode, ev){
+		switch(keycode){
+			case 0:
+				moveUp = false;
+				break;
+			case 1:
+				moveRight = false;
+				break;
+			case 2:
+				moveDown = false;
+				break;
+			case 3:
+				moveLeft = false;
+				break;
+			default:
+				break;
+		}		
+	};
+
+	this.onEnterState = function(args){
+		currentMap = Object.create(Maps[args]);
+		uiStack = [];
+		activeMember = this.getPrimaryPartyMember();
+		playerX = 300;
+		playerY = 240;
+		moveUp = moveDown = moveLeft = moveRight = false;
+		battleTrigger = 0;
+	};
+
+	this.onUpdate = function(dT){
+		if(uiStack.length !== 0){
+			if(uiStack[uiStack.length - 1].onUpdate(dT)){
+				uiStack.pop();
+			}
+			return;
+		}
+		
+		var d = speed * dT,
+			dX = (-+moveLeft || +moveRight) * d,
+			dY = (-+moveUp || +moveDown) * d;
+
+		if(dX > 0){
+			activeMember.sprite.setAnimation(1);
+		}else if(dX < 0){
+			activeMember.sprite.setAnimation(3);
+		}else if(dY > 0){
+			activeMember.sprite.setAnimation(7);
+		}else if(dY < 0){
+			activeMember.sprite.setAnimation(5);
+		}else{
+			activeMember.sprite.setStillAnimation();
+		}
+
+		/*
+			ENSURE ENOUGH ROOM FOR HITBOX
+		*/
+		if(dX !== 0 || dY !== 0){
+			var boundingBox = {
+				"left" : playerX - 12,
+				"right" : playerX + 12,
+				"top" : playerY + 24,
+				"bottom" : playerY + 12
+			};
+			var horizontalFree = !Maps.intersectsWallHorizontally.call(currentMap, boundingBox, dX) &&
+								!Maps.intersectsObjectsHorizontally.call(currentMap, boundingBox, dX),
+				verticalFree = 	!Maps.intersectsWallVertically.call(currentMap, boundingBox, dY) &&
+								!Maps.intersectsObjectsVertically.call(currentMap, boundingBox, dY);
+
+
+			if(verticalFree)
+				playerY += dY;
+
+			if(horizontalFree)
+				playerX += dX;
+
+			if(!!currentMap.battles.length){
+				battleTrigger += Math.random() * 0.5 * dT;
+				if(battleTrigger >= 1.0){
+					EventDispatcher.dispatchBattleStart(BattleList[currentMap.battles[Math.floor(Math.random() * currentMap.battles.length)]]);
+					return;
+				}	
+			}		
+		}
+	};	
+
+	this.onGameplayEvent = function(ev){
+		var detail = ev.detail;
+		if(detail.type === 'dialoguestart'){
+			uiStack.push(detail.dialogue);
+		}else if(detail.type === 'battlestart'){
+			battleTrigger = 0;
+			moveUp = moveDown = moveLeft = moveRight = false;
+			BattleTransition.start(detail.battle);
+			uiStack.push(BattleTransition);
+		}
+	};
+
+	this.onRender = function(renderingEngine, dT){
+		var cameraX = Math.min(currentMap.width * 32 - renderingEngine.frameWidth, Math.max(0, playerX - renderingEngine.halfWidth)),
+			cameraY = Math.min(currentMap.height * 32 - renderingEngine.frameHeight, Math.max(0, playerY - renderingEngine.halfHeight));
+
+		renderingEngine.executeRoutine(function(){
+			var img = this.getImage(currentMap.img),
+				dropshadow = this.getImage('dropshadow.png'),
+				rc = this.backBufferRC,
+				frameWidth = this.frameWidth,
+				frameHeight = this.frameHeight,
+
+				tileWidth = Math.ceil(frameWidth / 32) + 1,
+				tileHeight = Math.ceil(frameHeight / 32) + 1,
+
+				//Sort the sprites from higher position to lower position, to simulate depth when rendering
+				//(Render back to front)
+
+				//While working out this logic this is implemented as an array that sorted, but it should
+				//be implemented as a min-heap. While testing, I just want to avoid confounding bugs with potential
+				//issues with my heap implementation
+				spriteHeap = [];
+
+			rc.save();
+			rc.translate(-Math.floor(cameraX), -Math.floor(cameraY));
+
+			for(var x = Math.floor(cameraX / 32), lastX = x + tileWidth; x < lastX; ++x){
+				for(var y = Math.floor(cameraY / 32), lastY = y + tileHeight; y < lastY; ++y){
+					var i = x + y * currentMap.width,
+						tile = currentMap.tiles[i],
+						floor = (tile & 0x000000FF) * 32,
+						wall = ((tile & 0x0000FF00) >> 8) * 32,
+						ceiling = ((tile & 0x00FF0000) >> 16) * 32;						
+
+					if(currentMap.flippedCoords){
+						if(floor !== 0)
+							floor = img.naturalWidth - floor;
+						if(wall !== 0)
+							wall = img.naturalWidth - wall;
+					}
+
+					var tileX = x * 32,
+						tileY = y * 32;
+
+					rc.drawImage(img, floor, 0, 32, 32, tileX, tileY, 32, 32);
+
+					//Walls / Ceilings are either colinear or above players and must be sorted by depth accordingly
+					if(wall !== 0)
+						spriteHeap.push(new MapSpriteWrapper(wall, tileX, tileY, tileY + 32));					
+				}
+			}
+
+			var spriteX = Math.floor(playerX - 12),
+				spriteY = Math.floor(playerY - 24);
+
+			spriteHeap.push(new MapSpriteWrapper(activeMember, spriteX, spriteY, spriteY + 48));
+			
+			var i;
+			for(i = 0; i < currentMap.npcs.length; ++i){
+				var npc = currentMap.npcs[i];
+				spriteHeap.push(new MapSpriteWrapper(npc, npc.x, npc.y, npc.y + 24));
+			}
+			/*
+				Traverse heap and draw sprites in ascending Y order
+			*/
+			spriteHeap.sort(MapSpriteWrapper.compareHeight);
+			while(!!spriteHeap.length){
+				var sprite = spriteHeap.pop();
+				if(!isNaN(sprite.element)){
+					rc.drawImage(img, sprite.element, 0, 32, 32, sprite.x, sprite.y, 32, 32);
+				}else if(!!sprite.element.onRender){
+					sprite.element.onRender(renderingEngine, dT);
+				}else if(!!sprite.element.sprite){
+					sprite.element.sprite.update(dT);
+					rc.drawImage(dropshadow, sprite.x - 6, sprite.y + 30);
+					this.renderAnimatedSprite(sprite.element.sprite, sprite.x, sprite.y);					
+				}
+			}
+
+			rc.restore();
+		});
+
+		if(uiStack.length !== 0){
+			uiStack[uiStack.length - 1].onRender(renderingEngine, dT);
+		}
+	}	
+	return this;
+})();

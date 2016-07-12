@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Canvas Test</title>
+		<style>
+			body,html{
+				margin: 0;
+				height: 0;
+				width: 100%;
+				height: 100%;
+			}
+			#c{
+				width: 320px;
+				height: 240px;
+
+			  image-rendering: optimizeSpeed;             /* Older versions of FF          */
+			  image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+			  image-rendering: -webkit-optimize-contrast; /* Safari                        */
+			  image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+			  image-rendering: pixelated;                 /* Awesome future-browsers       */
+			  -ms-interpolation-mode: nearest-neighbor;   /* IE                            */				
+			}
+		</style>		
+	</head>
+	<body>
+		<canvas id="c"></canvas>
+	</body>
+	<script>
+		/*
+			Request Animation Frame lets us get timely regular updates when the page is in focus
+		*/
+		window.requestAnimationFrame = (function(){
+		  return  window.requestAnimationFrame       ||
+		          window.webkitRequestAnimationFrame ||
+		          window.mozRequestAnimationFrame    ||
+		          function( callback ){
+		            window.setTimeout(callback, 32);
+		          };
+		})();		
+	</script>
+	<script>
+		(function(d){
+			var canvas = d.getElementById('c'),
+			canvasAABB = canvas.getBoundingClientRect(),
+			width = canvasAABB.right,
+			height = canvasAABB.bottom - canvasAABB.top;
+
+			canvas.setAttribute('height', ''+height);
+			canvas.setAttribute('width', ''+width);
+
+
+			function RenderingEngine(canvas){
+				this.imageMap = {};
+				this.onInitCallbacks = [];
+				this.rc = canvas.getContext('2d');
+				this.frameWidth = +canvas.getAttribute('width');
+				this.frameHeight = +canvas.getAttribute('height');
+
+				this.halfwidth = this.frameWidth / 2;
+				this.halfHeight = this.frameHeight / 2;
+
+				this.backBuffer = document.createElement('canvas');
+				this.backBuffer.setAttribute('width', ''+this.frameWidth);
+				this.backBuffer.setAttribute('height', ''+this.frameHeight);
+
+				this.backBufferRC = this.backBuffer.getContext('2d');
+			}
+			RenderingEngine.prototype = {
+				"initialize" : function(images){
+					images = images || [];
+					var initializationStack = [];
+
+					for(var i = 0; i < images.length; ++i){
+						var img = this.imageMap[images[i]] = new Image();
+						img.src = './imgs/' + images[i];
+						initializationStack.push(img);
+
+						//404 Error will automatically go into the console
+						img.onerror = img.onload = (function(){
+							initializationStack.pop();
+							if(initializationStack.length === 0){
+								this.onInitializationComplete();
+							}
+						}).bind(this);
+					}
+				},
+
+				"attachInitializationCallback" : function(callback){
+					this.onInitCallbacks.push(callback);
+				},
+
+				"onInitializationComplete" : function(){
+					this.fontImage = this.imageMap['font.png'];
+					for(var i = 0; i < this.onInitCallbacks.length; ++i){
+						this.onInitCallbacks[i].call(this);
+					}
+				},
+				"renderAlert" : function(text, yOffset, backgroundsprite){
+					var img;
+					if(!backgroundsprite || !(img = this.imageMap[backgroundsprite]))
+						return;
+
+					this.backBufferRC.drawImage(img, 0, 0);
+					this.renderText(text, this.halfwidth, yOffset, 'c');
+				},
+				"renderProgress" : function(x,y,width,height,progress,innercolor,outercolor){
+					this.backBufferRC.fillStyle = innercolor;
+					this.backBufferRC.strokeStyle = outercolor;
+					this.backBufferRC.lineWidth = 2;
+
+					this.backBufferRC.fillRect(x,y,width*progress,height);
+					this.backBufferRC.strokeRect(x,y,width,height);
+				},
+				"fillRect" : function(x,y,width,height,color){
+					this.backBufferRC.fillStyle = color;
+					this.backBufferRC.fillRect(x,y,width,height);
+				},
+				"renderStaticSprite" : function(sprite, x, y){
+					var img;
+					if(!(img = this.imageMap[sprite]))
+						return;
+					this.backBufferRC.drawImage(img, x, y);
+				},
+				"renderAnimatedSprite" : function(sprite, x, y, width, height){
+					var img;
+					if(!(img = this.imageMap[sprite.img]))
+						return;					
+
+					var w = sprite.width,
+						h = sprite.height;
+
+					this.backBufferRC.drawImage(img, Math.floor(sprite.currentFrame) * w, 0, w, h, x, y, w, h);
+				},
+				"renderText" : function(text, x, y, alignment){
+					var img; 
+					if(!(img = this.fontImage))
+						return;
+
+					if(!!alignment){
+						switch(alignment){
+							case 'c':
+								x -= text.length*5;
+								break;
+							case 'r':
+								x -= text.length*10
+							default: break;
+						}
+					}
+					text = text.toUpperCase();
+					for(var i = 0; i < text.length; ++i){
+						this.backBufferRC.drawImage(img, (text.charCodeAt(i)-32) * 9, 0, 9, 14, x+i*10, y, 9, 14);
+					}
+				},
+
+				"clearScreen" : function(){
+					this.backBufferRC.fillStyle= '#000';
+					this.backBufferRC.fillRect(0,0,width,height);
+				},
+
+				"render" : function(scene){
+					this.clearScreen();
+					var objects = scene.objects;
+
+					for(var i = objects.length - 1; i >= 0; --i){
+						var object = objects[i];
+						switch(object.type){
+							case 1:   //TEXT
+								this.renderText(object.content, object.x, object.y, object.alignment);
+								break;
+							default:
+								break;
+						}
+					}
+				},
+				"swapBuffers" : function(){
+					this.rc.drawImage(this.backBuffer,0,0);
+				}
+			};
+			/*
+				Animation List contains an array of arrays that include stand and end indexes for each animation
+				This can be reused amongst similar sprites eg. humanoids in a JRPG
+			*/
+			function AnimatedSprite(img, animationList, animationSpeed, width, height){
+				this.img = img;
+				this.animationList = animationList || [];
+				this.animationSpeed = animationSpeed || 4;
+
+				this.width = width;
+				this.height = height;
+
+				this.currentAnimation = animationList.length > 0 ? animationList[0] : null;
+				this.currentFrame = this.currentAnimation[0];
+			}
+			AnimatedSprite.prototype = {
+				"update" : function(deltaSeconds){
+					var currentAnimation;
+					if(!(currentAnimation = this.currentAnimation) || currentAnimation.length === 1)
+						return;
+					this.currentFrame += this.animationSpeed * deltaSeconds;
+					if(this.currentFrame > currentAnimation[1]){
+						this.currentFrame = currentAnimation[0];
+					}
+				},
+				"setAnimation" : function(i){
+					if(this.animationList.length <= i)
+						return;
+					this.currentAnimation = this.animationList[i];
+					this.currentFrame = this.currentAnimation[0];
+				}
+			};
+			/*
+				SceneObject Types:
+				1 = text
+				2 = sprite
+			*/
+			function SceneObject(type, x, y, content, lifespan){
+				this.type = type;
+				this.x = x || 0;
+				this.y = y || 0;
+
+				this.content = content || '';
+				this.lifespan = lifespan || -1;
+			}
+			SceneObject.prototype = {
+				"update" : function(deltaSeconds){
+					if(this.lifespan == -1)
+						return true;
+
+					this.lifespan -= deltaSeconds;
+					return this.lifespan > 0;
+				}
+			};
+
+			function Scene(){
+				this.objects = [];
+			}			
+			Scene.prototype = {
+				"update" : function(deltaSeconds){
+					var objects = this.objects;
+					for(var i = objects.length - 1; i >= 0; --i){
+						if(!objects[i].update(deltaSeconds)){
+							objects.splice(i, 1);
+						}
+					}
+				},
+
+				"addText" : function(text, x, y, alignment, lifespan){
+					var object = new SceneObject(1, x, y, text, lifespan);
+					object.alignment = alignment;
+
+					this.objects.push(object);
+				},
+
+			};
+			var rpgGame = (function(){
+				/*
+					All humanoids share a common animation set
+				*/
+				var playerCharacterAnimationList = [
+					[0],		//STANDING RIGHT
+					[1,8],		//MOVING RIGHT
+					[9],		//STANDING LEFT
+					[10,18]		//MOVING LEFT
+				];				
+				/*
+					DESCRIPTION OF GAME STATUS STATES:
+					0x0002 = BATTLE
+					0x0012 = BATTLE - ACTION READY
+				*/
+				var state = {
+					"running" : true,
+					"status" : 0x0002,    //0x0002 = BATTLE
+					"activeOptionsList" : null,
+					"currentPosition" : {
+						"x" : 0,
+						"y" : 0
+					},
+					"party" : [
+						{"name" : 'Tuzi', "maxhp" : 4500, "hp" : 4500, "maxmp" : 300, "mp" : 300, "speed" : 125, "readiness" : 0.0, "abilities": ['ATTACK', 'ITEM', 'DEFEND'],
+											"sprite" : new AnimatedSprite('tuzi.png', playerCharacterAnimationList, 10, 24, 48)},
+						{"name" : 'Pan Pan', "maxhp" : 1200, "hp" : 1200, "maxmp" : 300, "mp" : 300, "speed" : 75, "readiness" : 0.0},
+						{"name" : 'Xiao Mao', "maxhp" : 2450, "hp" : 2450, "maxmp" : 300, "mp" : 300, "speed" : 100, "readiness" : 0.0}
+					],
+					"activeMember" : null,	
+					"alertMessage" : {
+						"lifespan" : 2,
+						"text" : "Fire 3"
+					},				
+				};
+
+				state.party[0].sprite.setAnimation(1);
+				state.setOptionPane = function(pane){
+					this.status = (pane << 4) | (this.status & (~0xFFF0));
+				}.bind(state);
+				state.getOption = function(){
+					return (this.status & 0xFF00) >> 8;
+				}.bind(state);
+				state.setOption = function(option){
+					this.status = (option << 8) | (this.status & (~0xFF00));
+				}.bind(state);
+				state.clearOption = function(){
+					this.status &= (~0xFF00);
+				}.bind(state);
+
+				/*
+					Prepare input events
+				*/
+				(function(){
+					d.addEventListener('keydown', function(ev){
+						/*
+							keycode : 
+							0 UP
+							1 RIGHT
+							2 DOWN
+							3 LEFT
+
+							4 CONFIRM
+							5 CANCEL
+						*/
+						var keycode = (function(ev){
+							var code = ev.keyCode || ev.which;
+							if(code == 32)
+								return 4;
+							if(code == 38 || code == 87)
+								return 0;
+							if(code == 39 || code == 68)
+								return 1;
+							if(code == 40 || code == 83)
+								return 2;
+							if(code == 37 || code == 65)
+								return 3;
+						})(ev);
+
+						/*
+							IN AN OPTIONS MENU?
+						*/
+						if(state.status & 0x00F0 && !!state.activeOptionsList){
+							//Selecting option
+							if(keycode < 4){
+								var currentOption = state.getOption();
+
+								if(keycode === 0){
+									if(currentOption === 0)
+										currentOption = state.activeOptionsList.length - 1;
+									else
+										currentOption--;
+								}else if(keycode === 2){
+									if(currentOption === state.activeOptionsList.length - 1)
+										currentOption = 0;
+									else
+										currentOption++;
+								}		
+								state.setOption(currentOption);
+							}			
+						}
+						
+					});
+				})();
+
+				/*
+					Initialize visual resources first
+				*/
+				var renderingEngine = new RenderingEngine(canvas);
+				renderingEngine.attachInitializationCallback(function(){
+
+				});
+				renderingEngine.initialize(['font.png', 
+											'topmessagewindow.png',
+											'bottomstatuswindow.png',
+											'bottomactionwindow.png',
+											'cursor.png',
+											'tuzi.png']);
+
+
+				/*
+
+				*/
+				/*
+					RPG has many gamestates... so to make things easier,
+					we will just define specific rendering routines to 
+					cater to each scenario
+				*/
+				var right = true;
+				renderingEngine.renderBattle = function(deltaSeconds){
+					var i, j,n;
+					renderingEngine.clearScreen();
+
+					/*
+						Party!
+					*/
+					if(right){
+						state.currentPosition.x += deltaSeconds * 20;
+						if(state.currentPosition.x > 300){
+							state.party[0].sprite.setAnimation(3);
+							right = false;
+						}
+					}else{
+						state.currentPosition.x -= deltaSeconds * 20;
+						if(state.currentPosition.x < 30){
+							right = true;
+							state.party[0].sprite.setAnimation(1);
+						}
+					}
+					
+					state.party[0].sprite.update(deltaSeconds);
+					renderingEngine.renderAnimatedSprite(state.party[0].sprite, state.currentPosition.x, 50);
+					/*
+						Player / Battle status
+					*/	
+					renderingEngine.renderStaticSprite('bottomstatuswindow.png', 0, 189);
+					renderingEngine.renderStaticSprite('bottomactionwindow.png', 231, 189);	
+					for(i = 0; i < state.party.length; ++i){
+						var member = state.party[i];
+						var y = 194 + i*14;
+						if(member === state.activeMember){
+							/*
+								render current member's battle options
+							*/
+							renderingEngine.renderStaticSprite('cursor.png', 10, y);
+
+							var currentOption = state.getOption();
+							for(j = 0; j < member.abilities.length; ++j){
+								if(j === currentOption)
+									renderingEngine.renderStaticSprite('cursor.png', 240, 194 + j*14);
+
+								renderingEngine.renderText(member.abilities[j], 252, 194 + j*14);
+							}			
+						}
+						renderingEngine.renderText(member.name, 20, y);
+						renderingEngine.renderText(''+member.hp, 165, y, 'r');
+						if(member.readiness === 1)
+							renderingEngine.renderProgress(174, y+1, 50, 10, member.readiness, "#0F0", "#FFF");
+						else
+							renderingEngine.renderProgress(174, y+1, 50, 10, member.readiness, "#AAF", "#FFF");
+					}
+
+					//Alert Boxes always take priority
+					if((state.alertMessage.lifespan -= deltaSeconds) > 0){
+						renderingEngine.renderAlert(state.alertMessage.text, 8, 'topmessagewindow.png');
+					}
+				};
+
+
+				var previousTime = Date.now();
+				(function gameLoop(){
+					if(state.running)
+						window.requestAnimationFrame(gameLoop);
+
+					var i;
+
+					//Simple Timestamp
+					var currentTime = Date.now(),
+						deltaMS = currentTime - previousTime,
+						deltaSeconds = deltaMS * 0.001;
+					previousTime = currentTime;
+
+					var status = state.status;
+					if(status & 0x0002){
+						/*
+							BATTLE
+						*/
+						//Update battle states
+						for(i = 0; i < state.party.length; ++i){
+							var member = state.party[i];
+							if(member.readiness < 1){
+								member.readiness += deltaSeconds * member.speed * 0.003;
+								if(member.readiness >= 1.0){
+									//MEMBER IS NOW READY
+									member.readiness = 1;
+									if(!state.activeMember){
+										state.activeMember = member;
+										state.activeOptionsList = member.abilities;
+										state.setOptionPane(1);
+									}
+								}
+							}
+						}
+						renderingEngine.renderBattle(deltaSeconds);						
+					}
+
+					renderingEngine.swapBuffers();
+				})();
+
+			})();
+
+		})(document)	
+	</script>
+</html>

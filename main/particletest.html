@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<style>
+			body,html,canvas{
+				margin: 0;
+				padding: 0;
+			}
+			#c{
+				height: 100vh;
+				width: 133vh;
+				display: block;
+				margin: 0 auto;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="c" width="640" height="480">Moo</canvas>
+	</body>
+	<script>
+		(function(d){
+			function Particle(x, y, dX, dY, lifespan, liveImg, dieImg){
+				this.liveImg = liveImg;
+				this.dieImg = dieImg;
+				this.lifespan = lifespan;
+				this.x = x;
+				this.y = y;
+				this.dX  = dX;
+				this.dY = dY;
+			}
+			Particle.prototype = {
+				"onRender" : function(renderingEngine, dT){
+					if( (this.lifespan -= dT) <= 0)
+						return true;
+
+					if(!!this.dieImg && this.lifespan < 0.3){
+						renderingEngine.drawImage(this.dieImg, this.x, this.y);
+						return false;
+					}
+
+					this.x += this.dX * dT;
+					this.y += this.dY * dT;
+
+					renderingEngine.drawImage(this.liveImg, this.x, this.y);
+				}
+			};
+
+			function ParticleSystem(x, y, info, minLife, maxLife, frequency, speed, total, liveImg, dieImg){
+				this.particles = [];
+				this.tick = 0;
+				this.frequency = frequency;
+				this.x = x;
+				this.y = y;
+				this.minLife = minLife;
+				this.maxLife = maxLife;
+				this.liveImg = liveImg;
+				this.dieImg = dieImg;
+				this.info = info;
+				this.speed = speed;
+			}
+			ParticleSystem.prototype = {
+				"onRender" : function(renderingEngine, dT){
+					if( (this.tick += dT) >= this.frequency){
+						this.tick = 0;
+						var x, y, dX, dY, liveImg, dieImg, lifespan = this.maxLife - Math.random() * (this.maxLife - this.minLife);
+
+						//Support lists of images or single images						
+						if(!!this.liveImg.length){							
+							liveImg = this.liveImg[Math.floor(Math.random() * this.liveImg.length)];
+						}else{
+							liveImg = this.liveImg;
+						}
+
+						if(!!this.dieImg && this.dieImg.length){
+							dieImg = this.dieImg[Math.random() * this.dieImg.length];
+						}else{
+							dieImg = this.dieImg;
+						}
+
+						if(this.info.type === 'directional'){							
+							x = Math.random() * 640 * 2 - 640;
+							y = this.y;
+
+							dX = this.speed * this.info.direction.x;
+							dY = this.speed * this.info.direction.y;
+						}else if(this.info.type === 'point'){
+							x = this.x;
+							y = this.y;
+							var angle = Math.random() * Math.PI;
+							dX = this.speed * Math.cos(angle);
+							dY = this.speed * Math.sin(angle);
+						}
+						this.particles.push(new Particle(x, y, dX, dY, lifespan, liveImg, dieImg));
+					}
+					if(this.particles.length > 0){
+						for(var i = this.particles.length - 1; i >= 0; --i){
+							if(this.particles[i].onRender(renderingEngine, dT)){
+								this.particles.splice(i, 1);
+							}
+						}
+					}
+				}
+			};
+
+			var canvas = d.getElementById('c'),
+				rc = canvas.getContext('2d'),
+				fireball = new Image(),
+				firesplash = new Image(),
+				lightningA = new Image(),
+				lightningB = new Image(),
+				lightningC = new Image();
+
+			fireball.src = './imgs/fireball.png';
+			firesplash.src = './imgs/flamesplash.png';
+
+			lightningA.src = './imgs/lightning.png';
+			lightningB.src = './imgs/lightning2.png';
+			lightningC.src = './imgs/lightning3.png';
+
+			var time  = 0;
+
+			var fire = new ParticleSystem(0, -64, {
+				"type" : 'directional',
+				"direction" : {"x" : 0.5, "y" : 0.5}
+			}, 1.25, 1.75, 0.02, 500, 20, fireball, firesplash);
+
+			var lightning = new ParticleSystem(200, 0, {
+				"type" : 'point'
+			}, 0.02, 0.15, 0.02, 35, 20, [lightningA, lightningB, lightningC], null);
+
+			(function render(){
+				rc.fillRect(0,0,640,480);
+
+				fire.onRender(rc, 0.03);
+				lightning.onRender(rc, 0.03);
+				setTimeout(render, 30);
+			})();
+
+		})(document);
+	</script>
+</html>
